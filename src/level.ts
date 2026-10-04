@@ -45,9 +45,9 @@ export function createLevel(): Level {
     solid(1240, 560, 420, 180, "moss"),
     solid(1520, 430, 120, 24, "stone"),
     solid(1780, 500, 90, 22, "stone"),
-    mover(1980, 430, 130, 22, 1920, 2280, 70),
+    mover(1980, 430, 130, 22, 1920, 2280, 84),
     solid(2480, 520, 160, 24, "stone"),
-    solid(2720, 560, 980, 180, "moss"),
+    solid(2720, 560, 1120, 180, "moss"),
     solid(2780, 430, 70, 18, "stone"),
     solid(2920, 390, 70, 18, "stone"),
     solid(3060, 450, 80, 18, "stone"),
@@ -76,8 +76,12 @@ export function createLevel(): Level {
   ];
 
   const beetles: Beetle[] = [
-    { x: 1020, y: 456, w: 36, h: 32, minX: 990, maxX: 1180, dir: 1, speed: 55, phase: 0 },
-    { x: 3500, y: 448, w: 36, h: 32, minX: 3490, maxX: 3600, dir: -1, speed: 40, phase: 1 },
+    { x: 820, y: 528, w: 36, h: 32, minX: 760, maxX: 920, dir: -1, speed: 52, phase: 1.2 },
+    { x: 1080, y: 456, w: 36, h: 32, minX: 1024, maxX: 1188, dir: 1, speed: 64, phase: 0 },
+    { x: 1588, y: 528, w: 36, h: 32, minX: 1556, maxX: 1632, dir: 1, speed: 48, phase: 0.8 },
+    { x: 2580, y: 488, w: 36, h: 32, minX: 2552, maxX: 2616, dir: -1, speed: 34, phase: 2.2 },
+    { x: 3264, y: 528, w: 36, h: 32, minX: 3216, maxX: 3320, dir: 1, speed: 54, phase: 1.5 },
+    { x: 3548, y: 448, w: 36, h: 32, minX: 3504, maxX: 3596, dir: -1, speed: 48, phase: 1 },
   ];
 
   return {

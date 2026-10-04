@@ -2,9 +2,9 @@ import type { Input } from "./input";
 import type { Platform } from "./level";
 import { overlaps, type Rect } from "./types";
 
-const RUN_SPEED = 290;
-const ACCEL = 2200;
-const FRICTION = 1800;
+const RUN_SPEED = 348;
+const ACCEL = 2640;
+const FRICTION = 2160;
 const GRAVITY = 1650;
 const GLIDE_GRAVITY = 280;
 const MAX_FALL = 900;
@@ -128,6 +128,8 @@ export class Player {
     for (const platform of platforms) {
       if (!overlaps(body, platform)) continue;
       if (horizontal) {
+        const sunk = body.y + body.h - platform.y;
+        if (sunk > 0 && sunk <= 6 && this.vy >= 0) continue;
         if (this.vx > 0) this.x = platform.x - this.w;
         else if (this.vx < 0) this.x = platform.x + platform.w;
         else {
