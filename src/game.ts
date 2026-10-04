@@ -55,7 +55,7 @@ export class Game {
     updateLevel(this.level, capped, this.player.rect);
     updateParticles(this.particles, capped, this.level.width);
 
-    if (this.player.grounded && this.player.ride?.kind !== "moving") {
+    if (this.player.grounded && this.player.ride?.kind !== "moving" && !this.hazardNear(this.player.x, this.player.y, 10)) {
       this.lastSafe = { x: this.player.x, y: this.player.y };
     }
     if (this.level.checkpoint.activated) {
@@ -96,22 +96,40 @@ export class Game {
   }
 
   private respawn() {
-    const point = this.level.checkpoint.activated ? this.spawn : this.lastSafe;
+    const preferred = this.level.checkpoint.activated ? this.spawn : this.lastSafe;
+    const point = this.safePoint(preferred);
     this.player.place(point.x, point.y);
     this.screen = "play";
   }
 
+  private safePoint(preferred: { x: number; y: number }): { x: number; y: number } {
+    const options = [preferred, this.spawn, this.lastSafe, this.level.spawn];
+    for (const option of options) {
+      if (!this.hazardNear(option.x, option.y, 8) && this.feetSupported(option.x, option.y)) return option;
+    }
+    return { ...this.level.spawn };
+  }
+
+  private feetSupported(x: number, y: number): boolean {
+    const probe = { x: x + 4, y: y + this.player.h, w: this.player.w - 8, h: 80 };
+    return this.level.platforms.some((platform) => platform.kind !== "moving" && overlaps(probe, platform));
+  }
+
   private hitsHazard(): boolean {
-    const body = this.player.rect;
-    return this.level.thorns.some((t) => overlaps(body, t)) || this.level.beetles.some((b) => overlaps(body, b));
+    return this.hazardNear(this.player.x, this.player.y, 0);
+  }
+
+  private hazardNear(x: number, y: number, pad: number): boolean {
+    const body = { x: x - pad, y, w: this.player.w + pad * 2, h: this.player.h };
+    return this.level.thorns.some((thorn) => overlaps(body, thorn)) || this.level.beetles.some((beetle) => overlaps(body, beetle));
   }
 
   private followCamera(dt: number) {
-    const look = this.player.facing * 90;
+    const look = this.player.facing * 108;
     const targetX = this.player.x + this.player.w / 2 - VIEW_W / 2 + look;
     const targetY = this.player.y + this.player.h / 2 - VIEW_H / 2;
     const next = clampCamera(
-      this.camera.x + (targetX - this.camera.x) * Math.min(1, dt * 4.5),
+      this.camera.x + (targetX - this.camera.x) * Math.min(1, dt * 5.4),
       targetY,
       this.level.width,
     );

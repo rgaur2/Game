@@ -14,10 +14,18 @@ canvas.addEventListener("pointerdown", () => game.onClick());
 
 function resize() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = Math.floor(VIEW_W * dpr);
-  canvas.height = Math.floor(VIEW_H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const fit = Math.min(window.innerWidth / VIEW_W, window.innerHeight / VIEW_H);
+  const displayW = Math.max(1, Math.round(VIEW_W * fit));
+  const displayH = Math.max(1, Math.round(VIEW_H * fit));
+  canvas.style.width = `${displayW}px`;
+  canvas.style.height = `${displayH}px`;
+  canvas.width = Math.max(1, Math.round(displayW * dpr));
+  canvas.height = Math.max(1, Math.round(displayH * dpr));
+  ctx.setTransform(canvas.width / VIEW_W, 0, 0, canvas.height / VIEW_H, 0, 0);
   ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
 }
 
 resize();
