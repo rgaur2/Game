@@ -13,10 +13,12 @@ Then open the URL Vite prints (usually `http://localhost:5173`).
 
 ## Controls
 
+- **Choose a spirit:** Left / Right or `A` / `D` on the menu, or click a portrait
 - **Move:** Arrow keys or `A` / `D`
 - **Jump:** Space, `W`, or Up
 - **Leaf glide:** hold jump while in the air
-- **Start / continue / replay:** Enter or click
+- **Start:** Enter or click Begin
+- **Continue / replay:** Enter or click
 
 Collect fireflies, avoid thorns and beetles, touch the mushroom checkpoint, then reach the glowing tree.
 

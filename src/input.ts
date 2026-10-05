@@ -1,3 +1,5 @@
+export type Pointer = { x: number; y: number };
+
 export class Input {
   left = false;
   right = false;
@@ -5,6 +7,9 @@ export class Input {
   jumpPressed = false;
   confirmPressed = false;
   clickConfirm = false;
+  menuLeftPressed = false;
+  menuRightPressed = false;
+  pointer: Pointer | null = null;
 
   constructor() {
     window.addEventListener("keydown", this.onKeyDown);
@@ -24,8 +29,14 @@ export class Input {
       event.preventDefault();
     }
 
-    if (key === "ArrowLeft" || key === "a" || key === "A") this.left = true;
-    if (key === "ArrowRight" || key === "d" || key === "D") this.right = true;
+    if (key === "ArrowLeft" || key === "a" || key === "A") {
+      this.left = true;
+      if (!event.repeat) this.menuLeftPressed = true;
+    }
+    if (key === "ArrowRight" || key === "d" || key === "D") {
+      this.right = true;
+      if (!event.repeat) this.menuRightPressed = true;
+    }
     if (key === "ArrowUp" || key === "w" || key === "W" || key === " " || key === "Spacebar") {
       if (!this.jump) this.jumpPressed = true;
       this.jump = true;
@@ -59,5 +70,23 @@ export class Input {
     this.confirmPressed = false;
     this.clickConfirm = false;
     return pressed;
+  }
+
+  consumeMenuLeft(): boolean {
+    const pressed = this.menuLeftPressed;
+    this.menuLeftPressed = false;
+    return pressed;
+  }
+
+  consumeMenuRight(): boolean {
+    const pressed = this.menuRightPressed;
+    this.menuRightPressed = false;
+    return pressed;
+  }
+
+  consumePointer(): Pointer | null {
+    const pointer = this.pointer;
+    this.pointer = null;
+    return pointer;
   }
 }

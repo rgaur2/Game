@@ -10,7 +10,12 @@ if (!context) throw new Error("Canvas 2D is unavailable");
 const ctx: CanvasRenderingContext2D = context;
 
 const game = new Game();
-canvas.addEventListener("pointerdown", () => game.onClick());
+canvas.addEventListener("pointerdown", (event) => {
+  const bounds = canvas.getBoundingClientRect();
+  const x = ((event.clientX - bounds.left) / bounds.width) * VIEW_W;
+  const y = ((event.clientY - bounds.top) / bounds.height) * VIEW_H;
+  game.onPointer(x, y);
+});
 
 function resize() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);

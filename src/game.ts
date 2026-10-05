@@ -1,12 +1,14 @@
 import { Input } from "./input";
 import { Player } from "./player";
 import { createLevel, fireflyScore, updateLevel, type Level } from "./level";
+import { CHARACTERS } from "./characters";
 import {
   clampCamera,
   createParticles,
   drawHud,
   drawOverlay,
   drawWorld,
+  hitMainMenu,
   updateParticles,
   type Camera,
   type Screen,
@@ -19,6 +21,7 @@ export class Game {
   private player: Player;
   private particles;
   private screen: Screen = "title";
+  private characterIndex = 0;
   private camera: Camera = { x: 0, y: 0 };
   private time = 0;
   private spawn = { x: 72, y: 500 };
@@ -32,17 +35,35 @@ export class Game {
     this.lastSafe = { ...this.level.spawn };
   }
 
-  onClick() {
-    this.input.clickConfirm = true;
+  onPointer(x: number, y: number) {
+    this.input.pointer = { x, y };
   }
 
   update(dt: number) {
     const capped = Math.min(dt, 1 / 30);
     this.time += capped;
+    const menuLeft = this.input.consumeMenuLeft();
+    const menuRight = this.input.consumeMenuRight();
+    const pointer = this.input.consumePointer();
+
+    if (this.screen === "title") {
+      if (menuLeft) this.selectCharacter(this.characterIndex - 1);
+      if (menuRight) this.selectCharacter(this.characterIndex + 1);
+      if (pointer) {
+        const hit = hitMainMenu(pointer.x, pointer.y);
+        if (hit?.type === "character") this.selectCharacter(hit.index);
+        else if (hit?.type === "begin") this.startRun(false);
+      }
+      if (this.input.consumeConfirm()) this.startRun(false);
+      this.input.consumeJumpPress();
+      updateParticles(this.particles, capped, this.level.width);
+      this.followCamera(capped);
+      return;
+    }
 
     if (this.screen !== "play") {
-      if (this.input.consumeConfirm()) {
-        if (this.screen === "title" || this.screen === "win") this.startRun(this.screen === "win");
+      if (this.input.consumeConfirm() || pointer) {
+        if (this.screen === "win") this.startRun(true);
         else this.respawn();
       }
       this.input.consumeJumpPress();
@@ -77,10 +98,16 @@ export class Game {
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-    drawWorld(ctx, this.camera, this.level, this.player, this.particles, this.time);
+    drawWorld(ctx, this.camera, this.level, this.player, this.particles, this.time, this.screen !== "title");
     const score = fireflyScore(this.level);
     if (this.screen === "play") drawHud(ctx, score.got, score.total);
-    drawOverlay(ctx, this.screen, score.got, score.total);
+    drawOverlay(ctx, this.screen, score.got, score.total, this.characterIndex, this.time);
+  }
+
+  private selectCharacter(index: number) {
+    const count = CHARACTERS.length;
+    this.characterIndex = ((index % count) + count) % count;
+    this.player.setLook(CHARACTERS[this.characterIndex]);
   }
 
   private startRun(resetAll: boolean) {

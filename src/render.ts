@@ -1,3 +1,4 @@
+import { CHARACTERS, type CharacterLook } from "./characters";
 import type { Player } from "./player";
 import type { Beetle, Checkpoint, Firefly, Goal, Level, Platform, Thorn } from "./level";
 import { VIEW_H, VIEW_W } from "./types";
@@ -50,6 +51,7 @@ export function drawWorld(
   player: Player,
   particles: Particle[],
   time: number,
+  showPlayer = true,
 ) {
   drawSky(ctx);
   drawFarTrees(ctx, camera, level.width, time);
@@ -61,7 +63,7 @@ export function drawWorld(
   for (const thorn of level.thorns) drawThorn(ctx, camera, thorn, time);
   for (const firefly of level.fireflies) drawFirefly(ctx, camera, firefly, time);
   for (const beetle of level.beetles) drawBeetle(ctx, camera, beetle);
-  drawPlayer(ctx, camera, player, time);
+  if (showPlayer) drawPlayer(ctx, camera, player, time);
   drawParticles(ctx, camera, particles, 1);
   drawForegroundMoss(ctx, camera, level.width);
   drawVignette(ctx);
@@ -73,18 +75,18 @@ function world(ctx: CanvasRenderingContext2D, camera: Camera, x: number, y: numb
 
 function drawSky(ctx: CanvasRenderingContext2D) {
   const sky = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-  sky.addColorStop(0, "#2a1b3d");
-  sky.addColorStop(0.45, "#4a2b4a");
-  sky.addColorStop(0.72, "#c46a3a");
-  sky.addColorStop(1, "#7a4a2a");
+  sky.addColorStop(0, "#071824");
+  sky.addColorStop(0.42, "#14506a");
+  sky.addColorStop(0.74, "#3aa39a");
+  sky.addColorStop(1, "#d7e7a8");
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-  ctx.fillStyle = "rgba(255, 214, 140, 0.85)";
+  ctx.fillStyle = "rgba(232, 246, 255, 0.92)";
   ctx.beginPath();
-  ctx.arc(980, 118, 46, 0, Math.PI * 2);
+  ctx.arc(980, 118, 42, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "rgba(255, 180, 90, 0.18)";
+  ctx.fillStyle = "rgba(150, 220, 230, 0.22)";
   ctx.beginPath();
   ctx.arc(980, 118, 110, 0, Math.PI * 2);
   ctx.fill();
@@ -281,46 +283,52 @@ function drawGoal(ctx: CanvasRenderingContext2D, camera: Camera, goal: Goal, tim
   ctx.restore();
 }
 
-function drawPlayer(ctx: CanvasRenderingContext2D, camera: Camera, player: Player, time: number) {
-  const cx = player.x + player.w / 2 - camera.x;
-  const cy = player.y + player.h / 2 - camera.y;
-  const bob = player.state === "idle" ? Math.sin(time * 4) * 2.2 : 0;
-  const run = player.state === "run" ? Math.sin(player.animTime * 14) : 0;
-  const stretchY = player.squash * (player.state === "jump" ? 1.12 : player.state === "glide" ? 0.92 : 1);
+function drawSpirit(
+  ctx: CanvasRenderingContext2D,
+  look: CharacterLook,
+  time: number,
+  state: Player["state"],
+  animTime: number,
+  squash: number,
+  facing: 1 | -1,
+) {
+  const bob = state === "idle" ? Math.sin(time * 4) * 2.2 : 0;
+  const run = state === "run" ? Math.sin(animTime * 14) : 0;
+  const stretchY = squash * (state === "jump" ? 1.12 : state === "glide" ? 0.92 : 1);
   const stretchX = 1 / stretchY;
 
   ctx.save();
-  ctx.translate(cx, cy + bob);
-  ctx.scale(player.facing * stretchX, stretchY);
+  ctx.translate(0, bob);
+  ctx.scale(facing * stretchX, stretchY);
 
-  ctx.fillStyle = "rgba(140, 255, 190, 0.22)";
+  ctx.fillStyle = look.aura;
   ctx.beginPath();
   ctx.ellipse(0, 4, 26, 28, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  if (player.state === "glide") {
-    ctx.fillStyle = "rgba(160, 220, 90, 0.55)";
+  if (state === "glide") {
+    ctx.fillStyle = look.wing;
     ctx.beginPath();
     ctx.ellipse(-6, 8, 18, 6, -0.4, 0, Math.PI * 2);
     ctx.ellipse(10, 10, 16, 5, 0.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  ctx.fillStyle = "#d8ffe8";
+  ctx.fillStyle = look.body;
   ctx.beginPath();
   ctx.ellipse(0, 2, 12, 16, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#9dffd0";
+  ctx.fillStyle = look.belly;
   ctx.beginPath();
   ctx.ellipse(0, 6, 8, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#6fd36a";
+  ctx.fillStyle = look.leaf;
   ctx.beginPath();
   ctx.ellipse(-8, -14 + run, 7, 11, -0.5, 0, Math.PI * 2);
   ctx.ellipse(6, -15 - run * 0.4, 6, 10, 0.4, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#c6e85a";
+  ctx.fillStyle = look.crown;
   ctx.beginPath();
   ctx.ellipse(-2, -18, 5, 8, 0.1, 0, Math.PI * 2);
   ctx.fill();
@@ -336,8 +344,9 @@ function drawPlayer(ctx: CanvasRenderingContext2D, camera: Camera, player: Playe
   ctx.arc(9.5, -1.8, 0.7, 0, Math.PI * 2);
   ctx.fill();
 
-  if (player.state === "run") {
-    ctx.strokeStyle = "rgba(180, 255, 140, 0.45)";
+  if (state === "run") {
+    ctx.strokeStyle = look.leaf;
+    ctx.globalAlpha = 0.55;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(-4, 16);
@@ -345,6 +354,15 @@ function drawPlayer(ctx: CanvasRenderingContext2D, camera: Camera, player: Playe
     ctx.stroke();
   }
 
+  ctx.restore();
+}
+
+function drawPlayer(ctx: CanvasRenderingContext2D, camera: Camera, player: Player, time: number) {
+  const cx = player.x + player.w / 2 - camera.x;
+  const cy = player.y + player.h / 2 - camera.y;
+  ctx.save();
+  ctx.translate(cx, cy);
+  drawSpirit(ctx, player.look, time, player.state, player.animTime, player.squash, player.facing);
   ctx.restore();
 }
 
@@ -366,7 +384,7 @@ function drawForegroundMoss(ctx: CanvasRenderingContext2D, camera: Camera, width
 function drawVignette(ctx: CanvasRenderingContext2D) {
   const g = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, 180, VIEW_W / 2, VIEW_H / 2, 520);
   g.addColorStop(0, "rgba(0,0,0,0)");
-  g.addColorStop(1, "rgba(12, 6, 16, 0.42)");
+  g.addColorStop(1, "rgba(4, 16, 24, 0.4)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 }
@@ -384,25 +402,124 @@ export function drawHud(ctx: CanvasRenderingContext2D, got: number, total: numbe
   ctx.fillText(`Fireflies  ${got} / ${total}`, 66, 48);
 }
 
-export function drawOverlay(ctx: CanvasRenderingContext2D, screen: Screen, got: number, total: number) {
+const CARD_W = 210;
+const CARD_H = 248;
+const CARD_GAP = 36;
+const CARD_Y = 188;
+
+function cardRects() {
+  const total = CHARACTERS.length * CARD_W + (CHARACTERS.length - 1) * CARD_GAP;
+  const start = (VIEW_W - total) / 2;
+  return CHARACTERS.map((_, index) => ({
+    x: start + index * (CARD_W + CARD_GAP),
+    y: CARD_Y,
+    w: CARD_W,
+    h: CARD_H,
+    index,
+  }));
+}
+
+const BEGIN_BUTTON = { x: VIEW_W / 2 - 150, y: 508, w: 300, h: 58 };
+
+export type MenuHit = { type: "character"; index: number } | { type: "begin" };
+
+export function hitMainMenu(x: number, y: number): MenuHit | null {
+  for (const card of cardRects()) {
+    if (x >= card.x && x <= card.x + card.w && y >= card.y && y <= card.y + card.h) {
+      return { type: "character", index: card.index };
+    }
+  }
+  const button = BEGIN_BUTTON;
+  if (x >= button.x && x <= button.x + button.w && y >= button.y && y <= button.y + button.h) {
+    return { type: "begin" };
+  }
+  return null;
+}
+
+function drawMainMenu(ctx: CanvasRenderingContext2D, selected: number, time: number) {
+  ctx.fillStyle = "rgba(6, 24, 34, 0.42)";
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+  ctx.fillStyle = "rgba(8, 28, 38, 0.72)";
+  roundRect(ctx, 150, 36, VIEW_W - 300, 650, 28);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(214, 236, 196, 0.35)";
+  ctx.lineWidth = 2;
+  roundRect(ctx, 150, 36, VIEW_W - 300, 650, 28);
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#f3ffe8";
+  ctx.font = "700 58px Georgia, serif";
+  ctx.fillText("Grove Sprite", VIEW_W / 2, 108);
+  ctx.font = "22px Georgia, serif";
+  ctx.fillStyle = "#d5ecdc";
+  ctx.fillText("Choose a forest spirit, then head home.", VIEW_W / 2, 148);
+
+  for (const card of cardRects()) {
+    const look = CHARACTERS[card.index];
+    const active = card.index === selected;
+    ctx.fillStyle = active ? "rgba(232, 255, 236, 0.16)" : "rgba(255, 255, 255, 0.06)";
+    roundRect(ctx, card.x, card.y, card.w, card.h, 18);
+    ctx.fill();
+    ctx.strokeStyle = active ? "#ffe08a" : "rgba(214, 236, 196, 0.28)";
+    ctx.lineWidth = active ? 3 : 1.5;
+    roundRect(ctx, card.x, card.y, card.w, card.h, 18);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(card.x + card.w / 2, card.y + 108);
+    ctx.scale(1.7, 1.7);
+    drawSpirit(ctx, look, time, "idle", 0, 1, 1);
+    ctx.restore();
+
+    ctx.fillStyle = "#f4efe4";
+    ctx.font = "700 26px Georgia, serif";
+    ctx.fillText(look.name, card.x + card.w / 2, card.y + 188);
+    ctx.font = "18px Georgia, serif";
+    ctx.fillStyle = "#d7c4a0";
+    ctx.fillText(look.blurb, card.x + card.w / 2, card.y + 216);
+  }
+
+  const button = BEGIN_BUTTON;
+  ctx.fillStyle = "#e7f6c8";
+  roundRect(ctx, button.x, button.y, button.w, button.h, 16);
+  ctx.fill();
+  ctx.fillStyle = "#163226";
+  ctx.font = "700 24px Georgia, serif";
+  ctx.fillText("Begin", button.x + button.w / 2, button.y + 37);
+
+  ctx.font = "18px Georgia, serif";
+  ctx.fillStyle = "#f4efe4";
+  ctx.fillText("A / D or arrows to choose  ·  Enter or Begin to play", VIEW_W / 2, 604);
+  ctx.fillStyle = "#d5ecdc";
+  ctx.font = "17px Georgia, serif";
+  ctx.fillText("In the grove: move with A / D, jump with Space, hold jump to glide", VIEW_W / 2, 640);
+  ctx.textAlign = "left";
+}
+
+export function drawOverlay(
+  ctx: CanvasRenderingContext2D,
+  screen: Screen,
+  got: number,
+  total: number,
+  selected: number,
+  time: number,
+) {
   if (screen === "play") return;
-  ctx.fillStyle = "rgba(12, 8, 16, 0.55)";
+  if (screen === "title") {
+    drawMainMenu(ctx, selected, time);
+    return;
+  }
+
+  ctx.fillStyle = "rgba(6, 24, 34, 0.55)";
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#e8f6d8";
   ctx.font = "700 64px Georgia, serif";
 
-  if (screen === "title") {
-    ctx.fillText("Grove Sprite", VIEW_W / 2, 230);
-    ctx.font = "22px Georgia, serif";
-    ctx.fillStyle = "#d7c4a0";
-    ctx.fillText("A little forest spirit on the way home.", VIEW_W / 2, 278);
-    drawControls(ctx, 330);
-    ctx.font = "20px Georgia, serif";
-    ctx.fillStyle = "#ffe08a";
-    ctx.fillText("Press Enter or click to begin", VIEW_W / 2, 560);
-  } else if (screen === "fail") {
+  if (screen === "fail") {
     ctx.fillText("Lost in the thicket", VIEW_W / 2, 280);
     ctx.font = "22px Georgia, serif";
     ctx.fillStyle = "#d7c4a0";
@@ -418,17 +535,6 @@ export function drawOverlay(ctx: CanvasRenderingContext2D, screen: Screen, got: 
     ctx.fillText("Press Enter or click to play again", VIEW_W / 2, 420);
   }
   ctx.textAlign = "left";
-}
-
-function drawControls(ctx: CanvasRenderingContext2D, y: number) {
-  const lines = [
-    "Move: Arrow keys or A / D",
-    "Jump: Space, W, or Up",
-    "Leaf glide: hold jump in the air",
-  ];
-  ctx.font = "20px Georgia, serif";
-  ctx.fillStyle = "#f4efe4";
-  lines.forEach((line, i) => ctx.fillText(line, VIEW_W / 2, y + i * 36));
 }
 
 export function clampCamera(x: number, y: number, worldWidth: number): Camera {

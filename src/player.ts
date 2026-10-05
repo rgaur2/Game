@@ -1,3 +1,4 @@
+import { CHARACTERS, type CharacterLook } from "./characters";
 import type { Input } from "./input";
 import type { Platform } from "./level";
 import { overlaps, type Rect } from "./types";
@@ -31,10 +32,15 @@ export class Player {
   state: AnimState = "idle";
   squash = 1;
   ride: Platform | null = null;
+  look: CharacterLook = CHARACTERS[0];
 
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
+  }
+
+  setLook(look: CharacterLook) {
+    this.look = look;
   }
 
   get rect(): Rect {
