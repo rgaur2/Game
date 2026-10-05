@@ -51,6 +51,7 @@ export function drawWorld(
   player: Player,
   particles: Particle[],
   time: number,
+  showPlayer = true,
 ) {
   drawSky(ctx);
   drawFarTrees(ctx, camera, level.width, time);
@@ -62,7 +63,7 @@ export function drawWorld(
   for (const thorn of level.thorns) drawThorn(ctx, camera, thorn, time);
   for (const firefly of level.fireflies) drawFirefly(ctx, camera, firefly, time);
   for (const beetle of level.beetles) drawBeetle(ctx, camera, beetle);
-  drawPlayer(ctx, camera, player, time);
+  if (showPlayer) drawPlayer(ctx, camera, player, time);
   drawParticles(ctx, camera, particles, 1);
   drawForegroundMoss(ctx, camera, level.width);
   drawVignette(ctx);

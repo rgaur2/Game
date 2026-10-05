@@ -98,7 +98,7 @@ export class Game {
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-    drawWorld(ctx, this.camera, this.level, this.player, this.particles, this.time);
+    drawWorld(ctx, this.camera, this.level, this.player, this.particles, this.time, this.screen !== "title");
     const score = fireflyScore(this.level);
     if (this.screen === "play") drawHud(ctx, score.got, score.total);
     drawOverlay(ctx, this.screen, score.got, score.total, this.characterIndex, this.time);
