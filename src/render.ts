@@ -424,7 +424,7 @@ function drawControls(ctx: CanvasRenderingContext2D, y: number) {
   const lines = [
     "Move: Arrow keys or A / D",
     "Jump: Space, W, or Up",
-    "Leaf glide: hold jump in the air",
+    "Leaf glide: hold jump while falling",
   ];
   ctx.font = "20px Georgia, serif";
   ctx.fillStyle = "#f4efe4";

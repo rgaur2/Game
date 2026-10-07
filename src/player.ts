@@ -2,16 +2,19 @@ import type { Input } from "./input";
 import type { Platform } from "./level";
 import { overlaps, type Rect } from "./types";
 
-const RUN_SPEED = 290;
-const ACCEL = 2200;
-const FRICTION = 1800;
-const GRAVITY = 1650;
-const GLIDE_GRAVITY = 280;
-const MAX_FALL = 900;
-const GLIDE_FALL = 95;
-const JUMP_VELOCITY = -560;
-const COYOTE_TIME = 0.1;
-const JUMP_BUFFER = 0.12;
+const RUN_SPEED = 155;
+const ACCEL = 780;
+const FRICTION = 1100;
+const GRAVITY = 980;
+const RELEASE_GRAVITY = 2200;
+const GLIDE_GRAVITY = 220;
+const MAX_FALL = 720;
+const GLIDE_FALL = 72;
+const JUMP_VELOCITY = -530;
+const COYOTE_TIME = 0.18;
+const JUMP_BUFFER = 0.16;
+/** Shared forgiveness for landing on a top and for ignoring a side at that lip. */
+const SURFACE_SLOP = 8;
 
 export type AnimState = "idle" | "run" | "jump" | "fall" | "glide";
 
@@ -55,8 +58,6 @@ export class Player {
 
   update(dt: number, input: Input, platforms: Platform[]) {
     const jumpPressed = input.consumeJumpPress();
-    if (jumpPressed) this.jumpBuffer = JUMP_BUFFER;
-    else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
 
     const axis = (input.right ? 1 : 0) - (input.left ? 1 : 0);
     if (axis !== 0) {
@@ -71,26 +72,31 @@ export class Player {
     if (this.grounded) this.coyote = COYOTE_TIME;
     else this.coyote = Math.max(0, this.coyote - dt);
 
-    if (this.jumpBuffer > 0 && this.coyote > 0) {
-      this.vy = JUMP_VELOCITY;
-      this.grounded = false;
-      this.coyote = 0;
-      this.jumpBuffer = 0;
-      this.squash = 1.18;
-      this.ride = null;
+    if (jumpPressed && this.coyote > 0) {
+      this.jump();
+    } else if (jumpPressed) {
+      this.jumpBuffer = JUMP_BUFFER;
+    } else {
+      this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
     }
 
-    this.gliding = !this.grounded && input.jump;
+    if (this.jumpBuffer > 0 && this.coyote > 0) this.jump();
+
+    const falling = this.vy > 20;
+    this.gliding = !this.grounded && input.jump && falling;
     if (this.gliding) {
       this.vy += GLIDE_GRAVITY * dt;
       if (this.vy > GLIDE_FALL) this.vy = GLIDE_FALL;
+    } else if (!this.grounded && this.vy < 0 && !input.jump) {
+      this.vy += RELEASE_GRAVITY * dt;
     } else {
       this.vy += GRAVITY * dt;
       if (this.vy > MAX_FALL) this.vy = MAX_FALL;
     }
 
+    const prevX = this.x;
     this.x += this.vx * dt;
-    this.resolve(platforms, true, dt);
+    this.resolve(platforms, true, dt, undefined, prevX);
 
     this.grounded = false;
     this.ride = null;
@@ -100,15 +106,17 @@ export class Player {
     this.ride = landed;
 
     if (landed?.kind === "moving") {
+      const rideFrom = this.x;
       this.x += landed.vx * dt;
-      this.resolve(platforms, true, dt);
+      this.resolve(platforms, true, dt, undefined, rideFrom);
     }
+    if (this.grounded && input.jump) this.jumpBuffer = 0;
 
     this.squash += (1 - this.squash) * Math.min(1, dt * 10);
     this.animTime += dt;
     if (this.grounded) {
       this.state = Math.abs(this.vx) > 20 ? "run" : "idle";
-    } else if (this.gliding && this.vy > -40) {
+    } else if (this.gliding) {
       this.state = "glide";
     } else if (this.vy < 0) {
       this.state = "jump";
@@ -117,42 +125,53 @@ export class Player {
     }
   }
 
+  private jump() {
+    this.vy = JUMP_VELOCITY;
+    this.grounded = false;
+    this.coyote = 0;
+    this.jumpBuffer = 0;
+    this.squash = 1.18;
+    this.ride = null;
+  }
+
   private resolve(
     platforms: Platform[],
     horizontal: boolean,
     dt: number,
     prevBottom?: number,
+    prevX?: number,
   ): Platform | null {
     const body = this.rect;
+    if (horizontal) {
+      const originX = prevX ?? this.x;
+      for (const platform of platforms) {
+        if (!overlaps(body, platform)) continue;
+        const enteredFromSide = originX + this.w <= platform.x || originX >= platform.x + platform.w;
+        if (!enteredFromSide) continue;
+        const feet = this.y + this.h;
+        if (this.vy >= 0 && feet <= platform.y + SURFACE_SLOP) continue;
+        if (originX + this.w <= platform.x) this.x = platform.x - this.w;
+        else this.x = platform.x + platform.w;
+        this.vx = 0;
+        body.x = this.x;
+      }
+      return null;
+    }
+
+    const feetBefore = prevBottom ?? this.y + this.h - this.vy * dt;
     let landed: Platform | null = null;
     for (const platform of platforms) {
       if (!overlaps(body, platform)) continue;
-      if (horizontal) {
-        if (this.vx > 0) this.x = platform.x - this.w;
-        else if (this.vx < 0) this.x = platform.x + platform.w;
-        else {
-          const leftOverlap = this.x + this.w - platform.x;
-          const rightOverlap = platform.x + platform.w - this.x;
-          this.x += rightOverlap < leftOverlap ? rightOverlap : -leftOverlap;
-        }
-        this.vx = 0;
-        body.x = this.x;
-      } else {
-        const fromAbove = this.vy >= 0 && (prevBottom ?? this.y + this.h - this.vy * dt) <= platform.y + 6;
-        if (fromAbove) {
-          this.y = platform.y - this.h;
-          this.vy = 0;
-          this.grounded = true;
-          this.gliding = false;
-          landed = platform;
-          this.squash = Math.min(this.squash, 0.9);
-        } else {
-          this.y = platform.y + platform.h;
-          this.vy = 0;
-        }
-        body.y = this.y;
-      }
+      const fromAbove = this.vy >= 0 && feetBefore <= platform.y + SURFACE_SLOP;
+      if (!fromAbove) continue;
+      if (!landed || platform.y < landed.y) landed = platform;
     }
+    if (!landed) return null;
+    this.y = landed.y - this.h;
+    this.vy = 0;
+    this.grounded = true;
+    this.gliding = false;
+    this.squash = Math.min(this.squash, 0.9);
     return landed;
   }
 }

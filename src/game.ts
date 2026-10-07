@@ -55,14 +55,15 @@ export class Game {
     updateLevel(this.level, capped, this.player.rect);
     updateParticles(this.particles, capped, this.level.width);
 
-    if (this.player.grounded && this.player.ride?.kind !== "moving") {
-      this.lastSafe = { x: this.player.x, y: this.player.y };
-    }
     if (this.level.checkpoint.activated) {
       this.spawn = { x: this.level.checkpoint.x + 12, y: this.level.checkpoint.y - 8 };
     }
 
-    if (this.player.y > DEATH_Y || this.hitsHazard()) {
+    const dead = this.player.y > DEATH_Y || this.hitsHazard();
+    if (this.player.grounded && this.player.ride?.kind !== "moving" && !dead) {
+      this.lastSafe = { x: this.player.x, y: this.player.y };
+    }
+    if (dead) {
       this.screen = "fail";
       return;
     }
@@ -98,7 +99,24 @@ export class Game {
   private respawn() {
     const point = this.level.checkpoint.activated ? this.spawn : this.lastSafe;
     this.player.place(point.x, point.y);
+    this.separateFromHazards();
     this.screen = "play";
+  }
+
+  private separateFromHazards() {
+    const hazards = [...this.level.beetles, ...this.level.thorns];
+    for (let pass = 0; pass < hazards.length; pass++) {
+      let moved = false;
+      for (const hazard of hazards) {
+        if (!overlaps(this.player.rect, hazard)) continue;
+        const outRight = hazard.x + hazard.w - this.player.x;
+        const outLeft = this.player.x + this.player.w - hazard.x;
+        if (outRight < outLeft) this.player.x = hazard.x + hazard.w;
+        else this.player.x = hazard.x - this.player.w;
+        moved = true;
+      }
+      if (!moved) break;
+    }
   }
 
   private hitsHazard(): boolean {
@@ -107,7 +125,7 @@ export class Game {
   }
 
   private followCamera(dt: number) {
-    const look = this.player.facing * 90;
+    const look = this.player.facing * 36;
     const targetX = this.player.x + this.player.w / 2 - VIEW_W / 2 + look;
     const targetY = this.player.y + this.player.h / 2 - VIEW_H / 2;
     const next = clampCamera(

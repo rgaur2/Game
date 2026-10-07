@@ -1,0 +1,44 @@
+---
+description: Prefer plain JavaScript, keep files under 300 lines, and factor code into small modules
+alwaysApply: true
+---
+
+# JavaScript, file size, and modularity
+
+## Language and stack
+
+- Write new code in plain JavaScript (`.js`). Do not add TypeScript (`.ts`, `.tsx`) or type-only files.
+- Do not introduce frameworks (React, Vue, Angular, Svelte, Next.js, and similar). Use the language and the browser or Node APIs already in the project.
+- A small existing tool such as a bundler may stay. Do not add a framework on top of it.
+
+```js
+// ❌ BAD — TypeScript and a component framework
+export function Score({ value }: { value: number }) {
+  return <p>{value}</p>;
+}
+
+// ✅ GOOD — plain JavaScript module
+export function formatScore(value) {
+  return String(value);
+}
+```
+
+## File size
+
+- Keep every file you create or edit at or under 300 lines.
+- If a change would push a file past 300 lines, split it before finishing.
+
+## Modularity
+
+- One responsibility per module. Name the file after that responsibility.
+- Extract a function when a block does a distinct job, or when the same logic appears twice.
+- Keep public exports small. Hide helpers in the same file unless another module needs them.
+- Pass data in through arguments. Avoid shared mutable state across modules.
+
+```js
+// ❌ BAD — input, rules, and drawing in one file
+function tick(state, keys, ctx) { /* hundreds of mixed lines */ }
+
+// ✅ GOOD — split by job
+// input.js reads keys, physics.js updates state, draw.js paints the frame
+```

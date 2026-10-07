@@ -38,21 +38,21 @@ function mover(x: number, y: number, w: number, h: number, minX: number, maxX: n
 
 export function createLevel(): Level {
   const platforms: Platform[] = [
-    solid(0, 560, 520, 180, "moss"),
-    solid(280, 470, 150, 28, "stone"),
-    solid(660, 560, 300, 180, "moss"),
-    solid(980, 488, 240, 36, "log"),
-    solid(1240, 560, 420, 180, "moss"),
-    solid(1520, 430, 120, 24, "stone"),
-    solid(1780, 500, 90, 22, "stone"),
-    mover(1980, 430, 130, 22, 1920, 2280, 70),
-    solid(2480, 520, 160, 24, "stone"),
+    solid(0, 560, 580, 180, "moss"),
+    solid(280, 480, 180, 28, "stone"),
+    solid(690, 560, 360, 180, "moss"),
+    solid(1050, 500, 280, 36, "log"),
+    solid(1360, 560, 500, 180, "moss"),
+    solid(1560, 450, 150, 24, "stone"),
+    solid(1860, 510, 130, 22, "stone"),
+    mover(2060, 450, 160, 22, 2000, 2320, 42),
+    solid(2400, 520, 260, 24, "stone"),
     solid(2720, 560, 980, 180, "moss"),
-    solid(2780, 430, 70, 18, "stone"),
-    solid(2920, 390, 70, 18, "stone"),
-    solid(3060, 450, 80, 18, "stone"),
-    solid(3220, 400, 90, 22, "stone"),
-    solid(3480, 480, 140, 28, "log"),
+    solid(2780, 470, 110, 18, "stone"),
+    solid(2960, 440, 110, 18, "stone"),
+    solid(3140, 470, 110, 18, "stone"),
+    solid(3320, 450, 120, 22, "stone"),
+    solid(3480, 484, 180, 28, "log"),
   ];
 
   const fireflies: Firefly[] = [
@@ -76,8 +76,8 @@ export function createLevel(): Level {
   ];
 
   const beetles: Beetle[] = [
-    { x: 1020, y: 456, w: 36, h: 32, minX: 990, maxX: 1180, dir: 1, speed: 55, phase: 0 },
-    { x: 3500, y: 448, w: 36, h: 32, minX: 3490, maxX: 3600, dir: -1, speed: 40, phase: 1 },
+    { x: 1100, y: 468, w: 36, h: 32, minX: 1060, maxX: 1280, dir: 1, speed: 32, phase: 0 },
+    { x: 3520, y: 452, w: 36, h: 32, minX: 3490, maxX: 3620, dir: -1, speed: 26, phase: 1 },
   ];
 
   return {
@@ -99,7 +99,6 @@ export function updateLevel(level: Level, dt: number, player: Rect) {
     }
     platform.dir ??= 1;
     platform.x += platform.speed * platform.dir * dt;
-    platform.vx = platform.speed * platform.dir;
     if (platform.x <= platform.minX) {
       platform.x = platform.minX;
       platform.dir = 1;
@@ -107,6 +106,7 @@ export function updateLevel(level: Level, dt: number, player: Rect) {
       platform.x = platform.maxX - platform.w;
       platform.dir = -1;
     }
+    platform.vx = platform.speed * platform.dir;
   }
 
   for (const beetle of level.beetles) {
